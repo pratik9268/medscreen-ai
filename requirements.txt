@@ -10,9 +10,12 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 pydantic>=2.0.0
 
-# Phase 2 (coming next)
-# reportlab
-# weasyprint
+# Phase 2 — PDF Report Generator
+reportlab>=4.0.0
+
+# Phase 3 (coming next)
+# pinecone-client
+# sentence-transformers
 
 # Phase 4 (coming)
 # google-api-python-client

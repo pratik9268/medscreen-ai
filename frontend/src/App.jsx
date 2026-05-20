@@ -82,27 +82,19 @@ function Message({ msg }) {
 function QuickReplies({ replies, onSelect, disabled }) {
   if (!replies || replies.length === 0) return null;
   return (
-    <div style={{
-      display: "flex", flexWrap: "wrap", gap: 8,
-      padding: "8px 16px 4px",
-    }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "8px 16px 4px" }}>
       {replies.map((r, i) => (
         <button key={i} onClick={() => onSelect(r)} disabled={disabled} style={{
           background: disabled ? COLORS.surface : COLORS.pill,
           color: disabled ? COLORS.textMuted : COLORS.pillText,
           border: `1px solid ${disabled ? COLORS.border : "#2563eb55"}`,
-          borderRadius: 20,
-          padding: "6px 14px",
-          fontSize: 13,
+          borderRadius: 20, padding: "6px 14px", fontSize: 13,
           cursor: disabled ? "not-allowed" : "pointer",
-          transition: "all 0.15s",
-          fontFamily: "inherit",
+          transition: "all 0.15s", fontFamily: "inherit",
         }}
-          onMouseEnter={e => { if (!disabled) { e.target.style.background = COLORS.pillHover; e.target.style.color = "#fff"; }}}
-          onMouseLeave={e => { if (!disabled) { e.target.style.background = COLORS.pill; e.target.style.color = COLORS.pillText; }}}
-        >
-          {r}
-        </button>
+          onMouseEnter={e => { if (!disabled) { e.target.style.background = COLORS.pillHover; e.target.style.color = "#fff"; } }}
+          onMouseLeave={e => { if (!disabled) { e.target.style.background = COLORS.pill; e.target.style.color = COLORS.pillText; } }}
+        >{r}</button>
       ))}
     </div>
   );
@@ -110,35 +102,27 @@ function QuickReplies({ replies, onSelect, disabled }) {
 
 function SummaryCard({ summary }) {
   const urgencyColor = {
-    emergency: COLORS.red,
-    urgent: "#f59e0b",
-    routine: COLORS.green,
+    emergency: COLORS.red, urgent: "#f59e0b", routine: COLORS.green,
   }[summary.urgency] || COLORS.green;
 
   return (
     <div style={{
-      margin: "12px 16px",
-      background: COLORS.surface,
-      border: `1px solid ${COLORS.border}`,
-      borderRadius: 16,
-      padding: 20,
+      margin: "12px 16px", background: COLORS.surface,
+      border: `1px solid ${COLORS.border}`, borderRadius: 16, padding: 20,
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <span style={{ color: COLORS.text, fontWeight: 600, fontSize: 16 }}>Pre-Screening Complete</span>
         <span style={{
-          background: `${urgencyColor}22`,
-          color: urgencyColor,
+          background: `${urgencyColor}22`, color: urgencyColor,
           border: `1px solid ${urgencyColor}44`,
           borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600,
           textTransform: "uppercase", letterSpacing: 1,
         }}>{summary.urgency}</span>
       </div>
-
       <Row label="Chief Complaint" value={summary.chief_complaint} />
       <Row label="Duration" value={summary.duration} />
       <Row label="Severity" value={`${summary.severity}/10`} />
       <Row label="Specialist" value={summary.recommended_specialist} accent />
-
       {summary.symptoms?.length > 0 && (
         <div style={{ marginTop: 12 }}>
           <div style={{ color: COLORS.textMuted, fontSize: 12, marginBottom: 6 }}>SYMPTOMS</div>
@@ -153,14 +137,12 @@ function SummaryCard({ summary }) {
           </div>
         </div>
       )}
-
       {summary.red_flags?.length > 0 && summary.red_flags[0] !== "none" && (
         <div style={{ marginTop: 12, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, padding: "10px 14px" }}>
           <div style={{ color: COLORS.red, fontSize: 12, fontWeight: 600, marginBottom: 4 }}>⚠ RED FLAGS</div>
           {summary.red_flags.map((f, i) => <div key={i} style={{ color: "#fca5a5", fontSize: 13 }}>{f}</div>)}
         </div>
       )}
-
       <div style={{ marginTop: 16, padding: "12px 0 0", borderTop: `1px solid ${COLORS.border}`, color: COLORS.textMuted, fontSize: 13 }}>
         ✅ Summary ready for Phase 2 — Report Generation
       </div>
@@ -177,6 +159,98 @@ function Row({ label, value, accent }) {
   );
 }
 
+// ── NEW: Report Download Button ───────────────────────────────────────────────
+function ReportButton({ sessionId }) {
+  const [status, setStatus] = useState("idle"); // idle | loading | done | error
+  const [errorMsg, setErrorMsg] = useState("");
+
+  async function handleDownload() {
+    if (status === "loading") return;
+    setStatus("loading");
+    setErrorMsg("");
+
+    try {
+      // 1. Generate the report
+      const res = await fetch(`${API}/report/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Report generation failed");
+      }
+
+      const data = await res.json();
+
+      // 2. Trigger browser download
+      const downloadUrl = `${API}${data.download_url}`;
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = data.report_filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setStatus("done");
+      // Reset button after 4 seconds
+      setTimeout(() => setStatus("idle"), 4000);
+
+    } catch (e) {
+      setErrorMsg(e.message);
+      setStatus("error");
+      setTimeout(() => setStatus("idle"), 4000);
+    }
+  }
+
+  const label = {
+    idle:    "📄 Download PDF Report",
+    loading: "⏳ Generating PDF...",
+    done:    "✅ Downloaded!",
+    error:   "❌ Failed — Retry",
+  }[status];
+
+  const bg = {
+    idle:    "linear-gradient(135deg, #2563eb, #7c3aed)",
+    loading: "#1e3a5f",
+    done:    "linear-gradient(135deg, #059669, #10b981)",
+    error:   "linear-gradient(135deg, #dc2626, #ef4444)",
+  }[status];
+
+  return (
+    <div style={{ margin: "0 16px 12px" }}>
+      <button
+        onClick={handleDownload}
+        disabled={status === "loading"}
+        style={{
+          width: "100%",
+          background: bg,
+          color: "#fff",
+          border: "none",
+          borderRadius: 12,
+          padding: "13px 20px",
+          fontSize: 15,
+          fontWeight: 600,
+          cursor: status === "loading" ? "not-allowed" : "pointer",
+          fontFamily: "inherit",
+          transition: "opacity 0.2s",
+          opacity: status === "loading" ? 0.7 : 1,
+          boxShadow: status === "idle" ? "0 4px 20px rgba(37,99,235,0.35)" : "none",
+        }}
+      >
+        {label}
+      </button>
+      {status === "error" && errorMsg && (
+        <div style={{ color: "#fca5a5", fontSize: 12, marginTop: 6, textAlign: "center" }}>
+          {errorMsg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -189,13 +263,8 @@ export default function App() {
   const [error, setError] = useState(null);
   const bottomRef = useRef(null);
 
-  useEffect(() => {
-    startSession();
-  }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  useEffect(() => { startSession(); }, []);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 
   async function startSession() {
     try {
@@ -219,7 +288,6 @@ export default function App() {
     setQuickReplies([]);
     setMessages(prev => [...prev, { role: "user", content: userMsg }]);
     setLoading(true);
-
     try {
       const res = await fetch(`${API}/session/chat`, {
         method: "POST",
@@ -230,7 +298,6 @@ export default function App() {
       setMessages(prev => [...prev, { role: "agent", content: data.reply }]);
       setQuickReplies(data.quick_replies || []);
       setSymptoms(data.symptoms_so_far || []);
-
       if (data.is_complete) {
         setIsComplete(true);
         setQuickReplies([]);
@@ -279,7 +346,28 @@ export default function App() {
             Online · Pre-Screening Assistant
           </div>
         </div>
-        {symptoms.length > 0 && (
+
+        {/* Ready for report button — only shows when complete */}
+        {isComplete && sessionId && (
+          <button
+            onClick={async () => {
+              // Scroll to download button
+              bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+            }}
+            style={{
+              marginLeft: "auto",
+              background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+              color: "#fff", border: "none", borderRadius: 20,
+              padding: "8px 16px", fontSize: 13, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit",
+              boxShadow: "0 2px 12px rgba(37,99,235,0.4)",
+            }}
+          >
+            📄 Ready for report
+          </button>
+        )}
+
+        {symptoms.length > 0 && !isComplete && (
           <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
             {symptoms.slice(0, 4).map((s, i) => (
               <span key={i} style={{
@@ -294,7 +382,7 @@ export default function App() {
 
       {/* Error banner */}
       {error && (
-        <div style={{ background: "rgba(239,68,68,0.1)", border: `1px solid rgba(239,68,68,0.3)`, color: "#fca5a5", padding: "10px 20px", fontSize: 13 }}>
+        <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", padding: "10px 20px", fontSize: 13 }}>
           ⚠ {error}
         </div>
       )}
@@ -311,6 +399,10 @@ export default function App() {
           </div>
         )}
         {summary && <SummaryCard summary={summary} />}
+
+        {/* PDF Download button — appears below summary when complete */}
+        {isComplete && sessionId && <ReportButton sessionId={sessionId} />}
+
         <div ref={bottomRef} />
       </div>
 
@@ -318,11 +410,7 @@ export default function App() {
       <QuickReplies replies={quickReplies} onSelect={sendMessage} disabled={loading || isComplete} />
 
       {/* Input */}
-      <div style={{
-        padding: "12px 16px 16px",
-        background: COLORS.surface,
-        borderTop: `1px solid ${COLORS.border}`,
-      }}>
+      <div style={{ padding: "12px 16px 16px", background: COLORS.surface, borderTop: `1px solid ${COLORS.border}` }}>
         <div style={{
           display: "flex", gap: 10, alignItems: "flex-end",
           background: COLORS.bg,
@@ -333,15 +421,14 @@ export default function App() {
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }}}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
             placeholder={isComplete ? "Pre-screening complete" : "Describe your symptoms..."}
             disabled={loading || isComplete}
             rows={1}
             style={{
               flex: 1, background: "transparent", border: "none", color: COLORS.text,
               fontSize: 15, resize: "none", fontFamily: "inherit", lineHeight: 1.5,
-              maxHeight: 120, overflowY: "auto",
-              opacity: isComplete ? 0.4 : 1,
+              maxHeight: 120, overflowY: "auto", opacity: isComplete ? 0.4 : 1,
             }}
           />
           <button
