@@ -23,8 +23,8 @@ const NAV = {
     { to: "/doctor",              icon: LayoutDashboard, label: "Dashboard"     },
     { to: "/doctor/today",        icon: Clock,           label: "Today"         },
     { to: "/doctor/appointments", icon: Calendar,        label: "Appointments"  },
-    { to: "/doctor/patients",     icon: Users,           label: "Patients"      },
-    { to: "/doctor/slots",        icon: Settings,        label: "My Schedule"   },
+    { to: "/doctor/slots",        icon: Clock,           label: "My Schedule"   },
+    { to: "/doctor/profile",      icon: Settings,        label: "My Profile"    },
   ],
   admin: [
     { to: "/admin",               icon: LayoutDashboard, label: "Dashboard"     },

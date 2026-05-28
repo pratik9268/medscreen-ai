@@ -1,27 +1,27 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
-// Auth
-import AuthPage       from "./pages/AuthPage";
-import Unauthorized   from "./pages/Unauthorized";
-
-// Layout
+import AuthPage        from "./pages/AuthPage";
+import Unauthorized    from "./pages/Unauthorized";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute  from "./components/ProtectedRoute";
 
-// Patient pages
+// Patient
 import PatientDashboard    from "./pages/PatientDashboard";
 import PatientChat         from "./pages/PatientChat";
 import PatientAppointments from "./pages/PatientAppointments";
 import PatientProfile      from "./pages/PatientProfile";
+import PatientReports      from "./pages/PatientReports";
+import BookAppointment     from "./pages/BookAppointment";
 
-// Doctor pages
+// Doctor
 import DoctorDashboard         from "./pages/DoctorDashboard";
 import DoctorAppointments      from "./pages/DoctorAppointments";
 import DoctorAppointmentDetail from "./pages/DoctorAppointmentDetail";
 import DoctorSlots             from "./pages/DoctorSlots";
+import DoctorProfile           from "./pages/DoctorProfile";
 
-// Admin pages
+// Admin
 import AdminDashboard from "./pages/AdminDashboard";
 
 function RoleHome() {
@@ -39,11 +39,13 @@ export default function App() {
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/"             element={<RoleHome />} />
 
-      {/* Patient routes */}
+      {/* Patient — with sidebar */}
       <Route element={<ProtectedRoute roles={["patient"]}><DashboardLayout /></ProtectedRoute>}>
-        <Route path="/patient"              element={<PatientDashboard />} />
-        <Route path="/patient/appointments" element={<PatientAppointments />} />
-        <Route path="/patient/profile"      element={<PatientProfile />} />
+        <Route path="/patient"                element={<PatientDashboard />} />
+        <Route path="/patient/appointments"   element={<PatientAppointments />} />
+        <Route path="/patient/reports"        element={<PatientReports />} />
+        <Route path="/patient/profile"        element={<PatientProfile />} />
+        <Route path="/patient/book/:doctorId" element={<BookAppointment />} />
       </Route>
 
       {/* Patient chat — full screen, no sidebar */}
@@ -53,25 +55,25 @@ export default function App() {
         </ProtectedRoute>
       } />
 
-      {/* Doctor routes */}
+      {/* Doctor — with sidebar */}
       <Route element={<ProtectedRoute roles={["doctor"]}><DashboardLayout /></ProtectedRoute>}>
-        <Route path="/doctor"                       element={<DoctorDashboard />} />
-        <Route path="/doctor/today"                 element={<DoctorAppointments />} />
-        <Route path="/doctor/appointments"          element={<DoctorAppointments />} />
-        <Route path="/doctor/appointments/:id"      element={<DoctorAppointmentDetail />} />
-        <Route path="/doctor/slots"                 element={<DoctorSlots />} />
+        <Route path="/doctor"                  element={<DoctorDashboard />} />
+        <Route path="/doctor/today"            element={<DoctorAppointments />} />
+        <Route path="/doctor/appointments"     element={<DoctorAppointments />} />
+        <Route path="/doctor/appointments/:id" element={<DoctorAppointmentDetail />} />
+        <Route path="/doctor/slots"            element={<DoctorSlots />} />
+        <Route path="/doctor/profile"          element={<DoctorProfile />} />
       </Route>
 
-      {/* Admin routes */}
+      {/* Admin — with sidebar */}
       <Route element={<ProtectedRoute roles={["admin"]}><DashboardLayout /></ProtectedRoute>}>
-        <Route path="/admin"             element={<AdminDashboard />} />
-        <Route path="/admin/users"       element={<AdminDashboard />} />
-        <Route path="/admin/doctors"     element={<AdminDashboard />} />
+        <Route path="/admin"              element={<AdminDashboard />} />
+        <Route path="/admin/users"        element={<AdminDashboard />} />
+        <Route path="/admin/doctors"      element={<AdminDashboard />} />
         <Route path="/admin/appointments" element={<AdminDashboard />} />
-        <Route path="/admin/stats"       element={<AdminDashboard />} />
+        <Route path="/admin/stats"        element={<AdminDashboard />} />
       </Route>
 
-      {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
