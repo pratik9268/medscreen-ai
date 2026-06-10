@@ -72,6 +72,16 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     return login_user(db, req)
 
+@auth_router.post("/logout")
+def logout(current_user: User = Depends(get_current_user)):
+    """Invalidate the Supabase session."""
+    try:
+        logout_user("")
+    except Exception:
+        pass
+    return {"message": "Logged out successfully"}
+
+
 @auth_router.get("/me")
 def me(current_user: User = Depends(get_current_user)):
     return {
@@ -346,6 +356,7 @@ def get_appointment_detail(
     return {
         "appointment": {
             "id":               appt.id,
+            "doctor_id":        appt.doctor_id,
             "scheduled_at":     appt.scheduled_at.isoformat(),
             "duration_minutes": appt.duration_minutes,
             "status":           appt.status,
@@ -391,6 +402,47 @@ def add_appointment_notes(
     appt.status = AppointmentStatus.completed
     db.commit()
     return {"message": "Notes saved and appointment marked complete"}
+
+@doctor_router.put("/appointments/{appointment_id}/reschedule")
+def reschedule_appointment(
+    appointment_id: int,
+    data: dict,
+    current_user: User = Depends(require_doctor),
+    db: Session = Depends(get_db),
+):
+    """Doctor reschedules an appointment to a new date/time."""
+    appt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    from datetime import datetime as dt
+    try:
+        new_time = dt.fromisoformat(data.get("scheduled_at", "").replace("Z", ""))
+    except Exception:
+        raise HTTPException(status_code=422, detail="Invalid datetime format")
+
+    # Check for conflicts with other appointments (proper overlap check)
+    appt_end = new_time + timedelta(minutes=appt.duration_minutes)
+    conflict  = db.query(Appointment).filter(
+        Appointment.id != appointment_id,
+        Appointment.doctor_id == appt.doctor_id,
+        Appointment.status.notin_([AppointmentStatus.cancelled]),
+        Appointment.scheduled_at < appt_end,
+        (Appointment.scheduled_at + timedelta(minutes=appt.duration_minutes)) > new_time,
+    ).first()
+    if conflict:
+        raise HTTPException(status_code=409, detail="This slot conflicts with another appointment")
+
+    appt.scheduled_at = new_time
+    appt.status       = AppointmentStatus.confirmed
+    db.commit()
+    db.refresh(appt)
+    return {
+        "message":      "Appointment rescheduled successfully",
+        "scheduled_at": appt.scheduled_at.isoformat(),
+        "status":       appt.status,
+    }
+
 
 @doctor_router.put("/appointments/{appointment_id}/status")
 def update_appointment_status(
@@ -462,7 +514,7 @@ def get_available_slots(
         Appointment.status.notin_([AppointmentStatus.cancelled]),
     ).all()
 
-    booked_times = [(a.scheduled_at, a.scheduled_at + timedelta(minutes=a.duration_minutes)) for a in booked]
+    booked_times = [(a.scheduled_at.replace(tzinfo=None), (a.scheduled_at + timedelta(minutes=a.duration_minutes)).replace(tzinfo=None)) for a in booked]
 
     # Generate free slots
     available = []

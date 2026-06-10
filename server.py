@@ -34,6 +34,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 # ── Startup ───────────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ app.include_router(screening_router)
 
 sessions: dict[str, SymptomCollectorSession] = {}
 
-# ── Agent Routes (Phase 1-3 — unchanged) ─────────────────────────────────────
+# ── Agent Routes ──────────────────────────────────────────────────────────────
 
 class StartResponse(BaseModel):
     session_id:    str
@@ -153,13 +154,27 @@ def create_report(req: ReportRequest):
 
 
 @app.get("/report/download/{filename}", tags=["Agent"])
-def download_report(filename: str):
+def download_report(filename: str, inline: bool = False):
+    """
+    Serve a PDF report.
+    inline=true  → browser renders it inline (for View PDF modal)
+    inline=false → forces download (default)
+    """
     if "/" in filename or "\\" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
     path = os.path.join("reports", filename)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Report not found")
-    return FileResponse(path, media_type="application/pdf", filename=filename)
+
+    disposition = "inline" if inline else "attachment"
+    return FileResponse(
+        path,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'{disposition}; filename="{filename}"',
+            "Cache-Control": "no-cache",
+        }
+    )
 
 
 @app.post("/classify", tags=["Agent"])

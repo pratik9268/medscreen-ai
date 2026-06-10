@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "/",
+  baseURL: "/api",   // ← All requests go to /api/... which proxies to FastAPI
   headers: { "Content-Type": "application/json" },
 });
 
