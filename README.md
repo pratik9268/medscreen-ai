@@ -116,8 +116,8 @@ An AI-powered patient pre-screening system that automates initial health assessm
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
-cd AI_Patient_Pre_Screening_Agent
+git clone https://github.com/pratik9268/medscreen-ai.git
+cd medscreen-ai
 ```
 
 ### 2. Backend Setup
@@ -296,4 +296,4 @@ For issues, questions, or suggestions, please open an issue in the repository.
 ---
 
 **Version**: 0.4.0  
-**Last Updated**: May 2026
+**Last Updated**: June 2026
