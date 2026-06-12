@@ -168,6 +168,15 @@ export default function AuthPage() {
                 </div>
               </div>
 
+              {mode === "login" && (
+                <div className="flex justify-end">
+                  <a href="/forgot-password"
+                    className="text-xs text-brand-600 dark:text-brand-400 hover:underline">
+                    Forgot password?
+                  </a>
+                </div>
+              )}
+
               <motion.button type="submit" disabled={loading} whileTap={{ scale:0.98 }}
                 className="btn-primary w-full flex items-center justify-center gap-2 mt-2">
                 {loading

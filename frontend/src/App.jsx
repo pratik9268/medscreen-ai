@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
 import AuthPage        from "./pages/AuthPage";
+import ForgotPassword   from "./pages/ForgotPassword";
+import ResetPassword    from "./pages/ResetPassword";
 import Unauthorized    from "./pages/Unauthorized";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute  from "./components/ProtectedRoute";
@@ -36,7 +38,9 @@ export default function App() {
     <Routes>
       {/* Public */}
       <Route path="/login"        element={<AuthPage />} />
-      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/unauthorized"    element={<Unauthorized />} />
+      <Route path="/forgot-password"  element={<ForgotPassword />} />
+      <Route path="/reset-password"   element={<ResetPassword />} />
       <Route path="/"             element={<RoleHome />} />
 
       {/* Patient — with sidebar */}
